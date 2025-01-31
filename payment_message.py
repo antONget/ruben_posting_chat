@@ -138,10 +138,6 @@ def main_user_pay_or_not(message):
             bot.send_message(chat_id=message.chat.id,
                              text=f'У вас осталось {data[0][1]} сообщений для отправки',
                              reply_markup=markup)
-    else:
-        bot.send_message(chat_id=message.chat.id, text='Неправильная команда')
-        bot.register_next_step_handler(message, main_user_pay_or_not)
-
 
 @bot.message_handler(func=lambda message: message.text == 'Опубликовать обьявление')
 def proverka(message):
@@ -150,11 +146,11 @@ def proverka(message):
     bot.send_message(message.chat.id, 'Ожидайте,проверяем оплату')
 
     token = config.tg_bot.yoomoney_access_token
-    amount_15 = config.tg_bot.tarif_15
-    amunnt_50 = config.tg_bot.tarif_50
-    amount_100 = config.tg_bot.tarif_100
-    amount_200 = config.tg_bot.tarif_200
-    cnt = requests.proverka(message, token,amount_15,amunnt_50,amount_100,amount_200)
+    amount_15 = float(config.tg_bot.tarif_15)
+    amount_50 = float(config.tg_bot.tarif_50)
+    amount_100 = float(config.tg_bot.tarif_100)
+    amount_200 = float(config.tg_bot.tarif_200)
+    cnt = requests.proverka(message, token,amount_15,amount_50,amount_100,amount_200)
     if cnt:
         bot.send_message(chat_id=message.chat.id,
                          text=f'Благодарим за оформление подписки,теперь вам доступно {cnt} сообщений\n'
@@ -164,7 +160,7 @@ def proverka(message):
         bot.send_message(chat_id=message.chat.id,
                          text='Оплата не прошла,попробйуте еще раз или обратитесь в поддержку',
                          reply_markup=markup)
-        bot.register_next_step_handler(message, proverka)
+        bot.register_next_step_handler(message,main_user_pay_or_not)
 
 
 @bot.callback_query_handler(func=lambda callback: (callback.data == 'Написать сообщение'))

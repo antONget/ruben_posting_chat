@@ -7,11 +7,11 @@ class TgBot:
     token: str
     admin_ids: int
     support_id: int
-    chat_id: int
-    tarif_15: float
-    tarif_50: float
-    tarif_100: float
-    tarif_200: float
+    chat_id : int
+    tarif_15 : float
+    tarif_50 : float
+    tarif_100 : float
+    tarif_200 : float
     yoomoney_access_token: str
     yoomoney_receiver: str
 
