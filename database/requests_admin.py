@@ -6,7 +6,13 @@ def get_one_word(message):
 
     conn = sqlite3.connect('database/BAD_WORDS.sql')
     cur = conn.cursor()
-    cur.execute(f'INSERT INTO bad_words (word) VALUES ("{word}")')
+    cur.execute('SELECT * FROM bad_words')
+    data = cur.fetchall()
+    for elem in data:
+        if word == elem[0]:
+            break
+    else:
+        cur.execute(f'INSERT INTO bad_words (word) VALUES ("{word}")')
     conn.commit()
     cur.close()
     conn.close()
@@ -18,11 +24,16 @@ def get_many_words(message):
 
     conn = sqlite3.connect('database/BAD_WORDS.sql')
     cur = conn.cursor()
-
+    cur.execute('SELECT * FROM bad_words')
+    data = cur.fetchall()
     for word in word_list:
-        cur.execute(f'INSERT INTO bad_words (word) VALUES ("{word}")')
-        conn.commit()
-
+        for elem in data:
+            if word == elem[0]:
+                print(elem[0],word)
+                break
+        else:
+            cur.execute(f'INSERT INTO bad_words (word) VALUES ("{word}")')
+            conn.commit()
     cur.close()
     conn.close()
 

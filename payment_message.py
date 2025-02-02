@@ -12,7 +12,8 @@ waiting_message_admin = False
 
 config: Config = load_config()
 
-admin_id = int(config.tg_bot.admin_ids)
+admin_ids = str(config.tg_bot.admin_ids)
+admin_ids_list = admin_ids.split(',')
 
 bot = telebot.TeleBot(config.tg_bot.token)
 logger = logging.getLogger(__name__)
@@ -48,15 +49,23 @@ def start(message):
     user_id = message.from_user.id
     requests.create_table(message)
 
-    if user_id == admin_id:
+    if user_id in admin_ids_list:
         markup = admin_keyboard.create_reply_markup_admin()
         bot.send_message(chat_id=message.chat.id,
                          text='Вы являетесь администратором,нажмите на кнопку чтобы выбрать действие',
                          reply_markup=markup)
         bot.register_next_step_handler(message, main_admin)
-    if user_id != admin_id:
+    if user_id not in admin_ids_list:
         if not comand:
-            markup = user_keyboard.create_post_message_user()
+            markup = user_keyboard.create_subscribe_verification_markup()
+            bot.send_message(chat_id=message.chat.id,
+                             text='Привет! 🎉\n\nДобро пожаловать в наш Телеграм-бот для публикации объявлений!'
+                                  ' Здесь вы можете легко и быстро разместить свои объявления в нашей группе по'
+                                  ' подписке. \n\n🌟Чтобы начать, просто следуйте'
+                                  ' инструкциям и отправьте ваше объявление. Мы поможем вам донести информацию до'
+                                  ' нашей аудитории! '
+                                  '📣\n\nЕсли у вас есть вопросы или нужно больше информации, просто напишите нам.'
+                                  ' Мы всегда готовы помочь! 🤗\n\nУдачи с вашими объявлениями! 🚀')
             bot.send_message(chat_id=message.chat.id, text='Вы перешли в бота по прямой ссылке и ваше сообщения будут'
                                                            ' публиковаться в эти группы:\n'
                                                            '1. @sam_o_stroy\n'
@@ -65,22 +74,26 @@ def start(message):
                                                            ' перейдите в чат и зайдите в бота по ссылке в'
                                                            ' закрепленном сообщении',
                              reply_markup=markup)
-            bot.register_next_step_handler(message, main_user_pay_or_not)
             requests.add_chat_id_user(user_id, 'None')
         else:
             requests.add_chat_id_user(user_id, comand[0])
-            markup_4 = user_keyboard.create_post_message_user()
+            markup_4 = user_keyboard.create_subscribe_verification_markup()
             bot.send_message(chat_id=message.chat.id,
-                             text='Приветсвенное сообщение',
+                             text='Привет! 🎉\n\nДобро пожаловать в наш Телеграм-бот для публикации объявлений!'
+                                  ' Здесь вы можете легко и '
+                                  'быстро разместить свои объявления в нашей группе по подписке. \n\n🌟'
+                                  'Чтобы начать, просто следуйте'
+                                  ' инструкциям и отправьте ваше объявление. Мы поможем вам донести информацию'
+                                  ' до нашей аудитории! '
+                                  '📣\n\nЕсли у вас есть вопросы или нужно больше информации, просто напишите нам.'
+                                  ' Мы всегда готовы помочь! 🤗\n\nУдачи с вашими объявлениями! 🚀',
                              reply_markup=markup_4)
-            bot.register_next_step_handler(message, main_user_pay_or_not)
 
 
-@bot.message_handler(func=lambda message: (message.text == 'Тарифы' or
-                                           message.text == 'Написать сообщение'))
+@bot.message_handler(func=lambda message: (message.text == 'Опубликовать объявление'))
 def main_user_pay_or_not(message):
     logging.info('main_user_pay_or_not')
-    if message.text == 'Тарифы' or message.text == 'Написать сообщение':
+    if message.text == 'Опубликовать объявление':
         user_id = message.from_user.id
 
         data = requests.check_data_cnt_message(message)
@@ -105,7 +118,7 @@ def main_user_pay_or_not(message):
                 quickpay_form='shop',
                 targets='Оплата подписки',
                 paymentType='SB',
-                sum=3,
+                sum=config.tg_bot.tarif_50,
                 label=f'{user_id}'
             )
 
@@ -143,10 +156,10 @@ def main_user_pay_or_not(message):
                              reply_markup=markup)
             time.sleep(3)
 
-            markup_2 = user_keyboard.create_subscribe_verification_markup()
+            markup_2 = user_keyboard.create_post_message_user()
 
             bot.send_message(chat_id=message.chat.id,
-                             text='После оплаты нажмите на кнопку "Опубликовать объявление"',
+                             text='После оплаты нажмите на кнопку "Проверить оплату"',
                              reply_markup=markup_2)
             bot.register_next_step_handler(message, proverka)
 
@@ -157,10 +170,10 @@ def main_user_pay_or_not(message):
                              reply_markup=markup)
 
 
-@bot.message_handler(func=lambda message: message.text == 'Опубликовать обьявление')
+@bot.message_handler(func=lambda message: message.text == 'Проверить оплату')
 def proverka(message):
     logging.info('proverka')
-    markup_3 = user_keyboard.create_post_message_user()
+    markup_3 = user_keyboard.create_subscribe_verification_markup()
     bot.send_message(message.chat.id, 'Ожидайте,проверяем оплату')
 
     token = config.tg_bot.yoomoney_access_token
@@ -181,12 +194,12 @@ def proverka(message):
         bot.register_next_step_handler(message, proverka)
 
 
-@bot.callback_query_handler(func=lambda callback: (callback.data == 'Написать сообщение'))
+@bot.callback_query_handler(func=lambda callback: (callback.data == 'Опубликовать объявление'))
 def main_user(callback):
     logging.info('main_user')
     user_id = callback.from_user.id
 
-    if callback.data == 'Написать сообщение':
+    if callback.data == 'Опубликовать объявление':
 
         cnt = requests.check_message_cht(user_id)
 
@@ -215,14 +228,14 @@ def get_message(message):
                               ' в поддержку нажав на кнопку ниже',
                          reply_markup=markup)
 
-        markup = user_keyboard.create_post_message_user()
+        markup = user_keyboard.create_subscribe_verification_markup()
         bot.send_message(chat_id=message.chat.id,
-                         text='Чтобы отправить сообщение еще раз нажмите на кнопку "Написать сообщение"',
+                         text='Чтобы отправить сообщение еще раз нажмите на кнопку "Опубликовать объявление"',
                          reply_markup=markup)
         bot.register_next_step_handler(message, main_user_pay_or_not)
     else:
         if str(chat_id) != 'None':
-            markup = user_keyboard.create_post_message_user()
+            markup = user_keyboard.create_subscribe_verification_markup()
             bot.send_message(chat_id=message.chat.id,
                              text='Ваше сообщение прошло модерацию и скоро будет опубликовано',
                              reply_markup=markup)
@@ -231,7 +244,7 @@ def get_message(message):
             bot.register_next_step_handler(message, main_user_pay_or_not)
 
         else:
-            markup = user_keyboard.create_post_message_user()
+            markup = user_keyboard.create_subscribe_verification_markup()
             bot.send_message(chat_id=message.chat.id,
                              text='Ваше сообщение прошло модерацию и скоро будет опубликовано',
                              reply_markup=markup)
@@ -242,8 +255,8 @@ def get_message(message):
             bot.register_next_step_handler(message, main_user_pay_or_not)
 
 
-@bot.message_handler(func=lambda message:(message.text == 'Пополнить список стоп-слов') or
-                                         (message.text == 'Написать и закрепить пост') or (
+@bot.message_handler(func=lambda message: (message.text == 'Пополнить список стоп-слов') or
+                                          (message.text == 'Написать и закрепить пост') or (
     message.text == 'Просмотреть список стоп слов') or (message.text == 'Удалить список стоп слов'))
 def main_admin(message):
     logging.info('main_admin')
@@ -262,11 +275,11 @@ def main_admin(message):
                               'Например: <code>Разместить объявление в группу вы можете через бота | Объявление |'
                               ' -1002130733166</code>',
                          parse_mode='html')
-        bot.register_next_step_handler(message,create_post)
+        bot.register_next_step_handler(message, create_post)
 
     if message.text == 'Просмотреть список стоп слов':
         words = requests_admin.get_all_stop_words()
-        bot.send_message(chat_id=message.chat.id,text=words)
+        bot.send_message(chat_id=message.chat.id, text=words)
 
     if message.text == 'Удалить список стоп слов':
         result = requests_admin.delete_all_stop_words()
@@ -300,26 +313,31 @@ def add_words(callback):
 def create_post(message):
     global waiting_message_admin
     logging.info('create_post')
-    data = requests_admin.create_attach_post(message)
-    message_to_send = data[0]
-    buttun_text = data[1]
-    chat_id = int(data[2])
-    peer_id = f'https://t.me/Sampostroy_bot?start={data[2]}'
-
-    markup = types.InlineKeyboardMarkup()
-    btn = types.InlineKeyboardButton(text=buttun_text,
-                                     url=f'{peer_id}')
-    markup.add(btn)
     try:
-        sent_message = bot.send_message(chat_id=chat_id,text=message_to_send,reply_markup=markup)
-        bot.pin_chat_message(chat_id=chat_id,
-                             message_id=sent_message.message_id)
-        bot.register_next_step_handler(message, main_admin)
-        waiting_message_admin = False
+        data = requests_admin.create_attach_post(message)
+        message_to_send = data[0]
+        buttun_text = data[1]
+        chat_id = int(data[2])
+        peer_id = f'https://t.me/Sampostroy_bot?start={data[2]}'
 
+        markup = types.InlineKeyboardMarkup()
+        btn = types.InlineKeyboardButton(text=buttun_text,
+                                         url=f'{peer_id}')
+        markup.add(btn)
+        try:
+            sent_message = bot.send_message(chat_id=chat_id,text=message_to_send, reply_markup=markup)
+            bot.pin_chat_message(chat_id=chat_id,
+                                 message_id=sent_message.message_id)
+            bot.register_next_step_handler(message, main_admin)
+            waiting_message_admin = False
+
+        except Exception as e:
+            bot.send_message(message.chat.id,
+                             'Неправильно указан peer_id чата либо бот не является администратором'
+                             ' чата,попробуйте вести сообщение еще раз')
+            bot.register_next_step_handler(message, create_post)
     except Exception as e:
-        bot.send_message(message.chat.id, 'Неправильно указан peer_id чата,попробуйте вести сообщение еще раз')
-        bot.register_next_step_handler(message, create_post)
+        bot.send_message(message.chat.id, 'Данные Введеные неверно,повторно нажмите на кнопку и повторите попытку')
 
 
 def one_word(message):
