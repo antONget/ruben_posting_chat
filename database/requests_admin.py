@@ -26,6 +26,7 @@ def get_many_words(message):
     cur.close()
     conn.close()
 
+
 def create_attach_post(message):
     data = str(message.text)
     data_list = data.split('|')
@@ -33,8 +34,28 @@ def create_attach_post(message):
     return data_list
 
 
+def get_all_stop_words():
+    conn = sqlite3.connect('database/BAD_WORDS.sql')
+    cur = conn.cursor()
+    cur.execute('SELECT * FROM bad_words')
+    data = cur.fetchall()
+    cur.close()
+    conn.close()
+    if data:
+        words = ''
+        for elem in data:
+            word = str(elem[0]) + ','
+            words += word
+        return words
+    else:
+        return 'Список стоп-слов пуст'
 
 
-
-
-
+def delete_all_stop_words():
+    conn = sqlite3.connect('database/BAD_WORDS.sql')
+    cur = conn.cursor()
+    cur.execute('DELETE FROM bad_words')
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True

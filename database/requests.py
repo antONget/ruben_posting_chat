@@ -2,9 +2,10 @@ import sqlite3
 from yoomoney import Client
 import logging
 
+
 def create_table(message):
     logging.info('create_table')
-    #СОЗДАНИЕ БД ЕСЛИ ОНИ ЕЩЕ НЕ СОЗДАНЫ
+    # СОЗДАНИЕ БД ЕСЛИ ОНИ ЕЩЕ НЕ СОЗДАНЫ
     user_id = message.from_user.id
 
     conn = sqlite3.connect('database/BAD_WORDS.sql')
@@ -16,17 +17,31 @@ def create_table(message):
 
     conn = sqlite3.connect('database/USERS.sql')
     cur = conn.cursor()
-    cur.execute(f'CREATE TABLE IF NOT EXISTS user_{user_id} (id int,message_cnt int)')
+    cur.execute(f'CREATE TABLE IF NOT EXISTS user_{user_id} (id int,message_cnt int,chats_id text)')
     conn.commit()
     cur.close()
     conn.close()
 
 
-#ДОБАВЛЕНИЕ СТОП-СЛОВ
+def add_chat_id_user(user_id, chat_id):
+    conn = sqlite3.connect('database/USERS.sql')
+    cur = conn.cursor()
+    cur.execute(f'SELECT chats_id FROM user_{user_id}')
+    ids = cur.fetchall()
+    if not ids:
+        cur.execute(f'INSERT INTO user_{user_id} (chats_id) VALUES ("{chat_id}")')
+    else:
+        cur.execute(f'UPDATE user_{user_id} SET chats_id = "{chat_id}"')
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+# ДОБАВЛЕНИЕ СТОП-СЛОВ
 def get_one_word(message):
     logging.info('get_one_word')
     word = message.text
-    #ОДНО СЛОВО
+    # ОДНО СЛОВО
     conn = sqlite3.connect('database/BAD_WORDS.sql')
     cur = conn.cursor()
     cur.execute(f'INSERT INTO bad_words (word) VALUES ("{word}")')
@@ -39,7 +54,7 @@ def get_many_words(message):
     logging.info('get_many_words')
     words = str(message.text)
     word_list = words.split(',')
-    #НЕСКОЛЬКО СЛОВ
+    # НЕСКОЛЬКО СЛОВ
     conn = sqlite3.connect('database/BAD_WORDS.sql')
     cur = conn.cursor()
 
@@ -53,8 +68,8 @@ def get_many_words(message):
 
 def delete_one_word(message):
     logging.info('delete_one_word')
-    user_id =  message.from_user.id
-    #ВЫЧИТАНИЕ ОДНОГО СЛОВА ИЗ ЛИМТА СООБЩЕНИЙ ПРИ ОТПРАВКЕ СООБЩЕНИИЯ
+    user_id = message.from_user.id
+    # ВЫЧИТАНИЕ ОДНОГО СЛОВА ИЗ ЛИМТА СООБЩЕНИЙ ПРИ ОТПРАВКЕ СООБЩЕНИИЯ
     conn = sqlite3.connect('database/USERS.sql')
     cur = conn.cursor()
     cur.execute(f'SELECT message_cnt FROM user_{user_id}')
@@ -66,11 +81,10 @@ def delete_one_word(message):
     conn.close()
 
 
-#ПРОВЕРКА ОПЛАТЫ И ЗАПИСЬ В БД КОЛ-ВА СЛОВ (ПО ПОДПИСКЕ)
-def proverka(message, token,amount_15,amount_50,amount_100,amount_200):
+# ПРОВЕРКА ОПЛАТЫ И ЗАПИСЬ В БД КОЛ-ВА СЛОВ (ПО ПОДПИСКЕ)
+def proverka(message, token, amount_15, amount_50, amount_100, amount_200):
     logging.info('proverka')
     PAYMENT_TOKEN = token
-    print(PAYMENT_TOKEN)
 
     user_id = message.from_user.id
 
@@ -79,40 +93,44 @@ def proverka(message, token,amount_15,amount_50,amount_100,amount_200):
 
     for operation in history.operations:
 
-        if operation.status == 'success' and operation.amount == float(amount_15 - (amount_15 * 0.03)):
+        if operation.status == 'success' and ((amount_15-(amount_15*0.05)) < operation.amount < amount_15):
             conn = sqlite3.connect('database/USERS.sql')
             cur = conn.cursor()
-            cur.execute(f'INSERT INTO user_{user_id} (id,message_cnt) VALUES ("{user_id}","{15}")')
+            cur.execute(f'UPDATE user_{user_id} SET id = "{user_id}"')
+            cur.execute(f'UPDATE user_{user_id} SET message_cnt = "{15}"')
             conn.commit()
             cur.close()
             conn.close()
 
             return 15
 
-        if operation.status == 'success' and operation.amount == float(amount_50 - (amount_50 * 0.03)):
+        if operation.status == 'success' and ((amount_50-(amount_50*0.05)) < operation.amount < amount_50):
             conn = sqlite3.connect('database/USERS.sql')
             cur = conn.cursor()
-            cur.execute(f'INSERT INTO user_{user_id} (id,message_cnt) VALUES ("{user_id}","{50}")')
+            cur.execute(f'UPDATE user_{user_id} SET id = "{user_id}"')
+            cur.execute(f'UPDATE user_{user_id} SET message_cnt = "{50}"')
             conn.commit()
             cur.close()
             conn.close()
 
             return 50
 
-        if operation.status == 'success' and operation.amount == float(amount_100 - (amount_100 * 0.03)):
+        if operation.status == 'success' and ((amount_100-(amount_100*0.05)) < operation.amount < amount_100):
             conn = sqlite3.connect('database/USERS.sql')
             cur = conn.cursor()
-            cur.execute(f'INSERT INTO user_{user_id} (id,message_cnt) VALUES ("{user_id}","{100}")')
+            cur.execute(f'UPDATE user_{user_id} SET id = "{user_id}"')
+            cur.execute(f'UPDATE user_{user_id} SET message_cnt = "{100}"')
             conn.commit()
             cur.close()
             conn.close()
 
             return 100
 
-        if operation.status == 'success' and operation.amount == float(amount_200 - (amount_200 * 0.03)):
+        if operation.status == 'success' and ((amount_200-(amount_200*0.05)) < operation.amount < amount_200):
             conn = sqlite3.connect('database/USERS.sql')
             cur = conn.cursor()
-            cur.execute(f'INSERT INTO user_{user_id} (id,message_cnt) VALUES ("{user_id}","{200}")')
+            cur.execute(f'UPDATE user_{user_id} SET id = "{user_id}"')
+            cur.execute(f'UPDATE user_{user_id} SET message_cnt = "{15}"')
             conn.commit()
             cur.close()
             conn.close()
@@ -126,7 +144,7 @@ def proverka(message, token,amount_15,amount_50,amount_100,amount_200):
 def check_data_cnt_message(message):
     logging.info('check_data_cnt_message')
     user_id = message.from_user.id
-    #ПРОВЕРКА ПОДПИСКИ
+    # ПРОВЕРКА ПОДПИСКИ
     conn = sqlite3.connect('database/USERS.sql')
     cur = conn.cursor()
     cur.execute(f'SELECT * FROM user_{user_id}')
@@ -138,7 +156,7 @@ def check_data_cnt_message(message):
 
 def check_message_cht(user_id):
     logging.info('check_message_cht')
-    #ПОВТОРНАЯ ПРОВЕРКА ПОДПИСКА
+    # ПОВТОРНАЯ ПРОВЕРКА ПОДПИСКА
     conn = sqlite3.connect('database/USERS.sql')
     cur = conn.cursor()
     cur.execute(f'SELECT message_cnt FROM user_{user_id}')
@@ -156,7 +174,7 @@ def send_message_to_chat(message_to_send, user_id):
     words = cur.fetchall()
     cur.close()
     conn.close()
-    #ПРОВЕРКА НА СТОП СЛОВА
+    # ПРОВЕРКА НА СТОП СЛОВА
     for word_in_list in words:
         word = word_in_list[0]
         if str(word).lower() in message_to_send.lower():
@@ -174,3 +192,13 @@ def send_message_to_chat(message_to_send, user_id):
         conn.close()
 
         return True
+
+
+def get_chat_id(user_id):
+    conn = sqlite3.connect('database/USERS.sql')
+    cur = conn.cursor()
+    cur.execute(f'SELECT chats_id FROM user_{user_id}')
+    id_ = cur.fetchall()
+    cur.close()
+    conn.close()
+    return id_[0][0]

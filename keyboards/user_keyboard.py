@@ -3,7 +3,14 @@ from telebot import types
 
 def create_start_reply_markup_user():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    btn = types.KeyboardButton(text='Начать')
+    btn = types.KeyboardButton(text='Тарифы')
+    markup.add(btn)
+    return markup
+
+
+def create_post_message_user():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    btn = types.KeyboardButton('Написать сообщение')
     markup.add(btn)
     return markup
 
