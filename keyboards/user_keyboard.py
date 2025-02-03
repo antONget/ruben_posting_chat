@@ -17,7 +17,7 @@ def create_post_message_user():
 
 def create_subscribe_verification_markup():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    btn = types.KeyboardButton(text='Опубликовать обьявление')
+    btn = types.KeyboardButton(text='Опубликовать объявление')
     markup.add(btn)
     return markup
 
