@@ -43,19 +43,18 @@ def extract_arg(arg):
 @bot.message_handler(commands=['start'])
 def start(message):
     comand = extract_arg(message.text)
-    print(comand)
 
     logging.info('start')
     user_id = message.from_user.id
     requests.create_table(message)
-
-    if user_id in admin_ids_list:
+    print(admin_ids_list)
+    if str(user_id) in admin_ids_list:
         markup = admin_keyboard.create_reply_markup_admin()
         bot.send_message(chat_id=message.chat.id,
                          text='Вы являетесь администратором,нажмите на кнопку чтобы выбрать действие',
                          reply_markup=markup)
         bot.register_next_step_handler(message, main_admin)
-    if user_id not in admin_ids_list:
+    else:
         if not comand:
             markup = user_keyboard.create_subscribe_verification_markup()
             bot.send_message(chat_id=message.chat.id,
