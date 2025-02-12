@@ -82,9 +82,11 @@ def start(message):
                                   '📣\n\nЕсли у вас есть вопросы или нужно больше информации, просто напишите нам. Мы всегда готовы помочь! 🤗\n\nУдачи с вашими объявлениями! 🚀',
                              reply_markup=markup_4)
 
-@bot.callback_query_handler(func=lambda callback:(callback.data == 'Поддержка'))
+
+@bot.callback_query_handler(func=lambda callback:(callback.data == 'support'))
 def support(callback):
-    bot.edit_message_text(chat_id=callback.message.chat.id,message_id=callback.message.chat.id,
+    bot.edit_message_text(chat_id=callback.message.chat.id,
+                          message_id=callback.message.message_id,
                           text='Если у вас есть вопросы связанные с работой бота, либо проблемы с проведением платежа, то можете обратиться к нам,'
                                'также будем рады услышать предложения по улучшению функционала бота.'
                                '\n@Mnenie_Ru'
