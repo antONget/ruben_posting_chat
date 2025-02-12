@@ -42,29 +42,27 @@ def extract_arg(arg):
 
 @bot.message_handler(commands=['start'])
 def start(message):
+    logging.info('start')
     comand = extract_arg(message.text)
+
 
     logging.info('start')
     user_id = message.from_user.id
     requests.create_table(message)
-    print(admin_ids_list)
     if str(user_id) in admin_ids_list:
         markup = admin_keyboard.create_reply_markup_admin()
         bot.send_message(chat_id=message.chat.id,
                          text='Вы являетесь администратором,нажмите на кнопку чтобы выбрать действие',
                          reply_markup=markup)
         bot.register_next_step_handler(message, main_admin)
-    else:
+    if str(user_id) not in admin_ids_list:
         if not comand:
             markup = user_keyboard.create_subscribe_verification_markup()
             bot.send_message(chat_id=message.chat.id,
-                             text='Привет! 🎉\n\nДобро пожаловать в наш Телеграм-бот для публикации объявлений!'
-                                  ' Здесь вы можете легко и быстро разместить свои объявления в нашей группе по'
-                                  ' подписке. \n\n🌟Чтобы начать, просто следуйте'
-                                  ' инструкциям и отправьте ваше объявление. Мы поможем вам донести информацию до'
-                                  ' нашей аудитории! '
-                                  '📣\n\nЕсли у вас есть вопросы или нужно больше информации, просто напишите нам.'
-                                  ' Мы всегда готовы помочь! 🤗\n\nУдачи с вашими объявлениями! 🚀')
+                             text='Привет! 🎉\n\nДобро пожаловать в наш Телеграм-бот для публикации объявлений! Здесь вы можете легко и '
+                                  'быстро разместить свои объявления в нашей группе по подписке. \n\n🌟Чтобы начать, просто следуйте'
+                                  ' инструкциям и отправьте ваше объявление. Мы поможем вам донести информацию до нашей аудитории! '
+                                  '📣\n\nЕсли у вас есть вопросы или нужно больше информации, просто напишите нам. Мы всегда готовы помочь! 🤗\n\nУдачи с вашими объявлениями! 🚀')
             bot.send_message(chat_id=message.chat.id, text='Вы перешли в бота по прямой ссылке и ваше сообщения будут'
                                                            ' публиковаться в эти группы:\n'
                                                            '1. @sam_o_stroy\n'
@@ -78,14 +76,10 @@ def start(message):
             requests.add_chat_id_user(user_id, comand[0])
             markup_4 = user_keyboard.create_subscribe_verification_markup()
             bot.send_message(chat_id=message.chat.id,
-                             text='Привет! 🎉\n\nДобро пожаловать в наш Телеграм-бот для публикации объявлений!'
-                                  ' Здесь вы можете легко и '
-                                  'быстро разместить свои объявления в нашей группе по подписке. \n\n🌟'
-                                  'Чтобы начать, просто следуйте'
-                                  ' инструкциям и отправьте ваше объявление. Мы поможем вам донести информацию'
-                                  ' до нашей аудитории! '
-                                  '📣\n\nЕсли у вас есть вопросы или нужно больше информации, просто напишите нам.'
-                                  ' Мы всегда готовы помочь! 🤗\n\nУдачи с вашими объявлениями! 🚀',
+                             text='Привет! 🎉\n\nДобро пожаловать в наш Телеграм-бот для публикации объявлений! Здесь вы можете легко и '
+                                  'быстро разместить свои объявления в нашей группе по подписке. \n\n🌟Чтобы начать, просто следуйте'
+                                  ' инструкциям и отправьте ваше объявление. Мы поможем вам донести информацию до нашей аудитории! '
+                                  '📣\n\nЕсли у вас есть вопросы или нужно больше информации, просто напишите нам. Мы всегда готовы помочь! 🤗\n\nУдачи с вашими объявлениями! 🚀',
                              reply_markup=markup_4)
 
 
@@ -193,12 +187,12 @@ def proverka(message):
         bot.register_next_step_handler(message, proverka)
 
 
-@bot.callback_query_handler(func=lambda callback: (callback.data == 'Опубликовать объявление'))
+@bot.callback_query_handler(func=lambda callback: (callback.data == 'write_message'))
 def main_user(callback):
     logging.info('main_user')
     user_id = callback.from_user.id
 
-    if callback.data == 'Опубликовать объявление':
+    if callback.data == 'write_message':
 
         cnt = requests.check_message_cht(user_id)
 
@@ -206,9 +200,10 @@ def main_user(callback):
             main_user_pay_or_not(callback.message)
 
         else:
-            bot.send_message(chat_id=callback.message.chat.id,
-                             text='Отправьте сообщение которое вы хотите опубликовать'
-                                  ' (Перед отправкой проверьте сообщение на наличие ошибок и опечаток)')
+            bot.edit_message_text(chat_id=callback.message.chat.id,message_id=callback.message.message_id,
+                                  text='Отправьте сообщение которое вы хотите опубликовать'
+                                       ' (Перед отправкой проверьте сообщение на наличие ошибок и опечаток)',
+                                  reply_markup=types.InlineKeyboardMarkup())
             bot.register_next_step_handler(callback.message, get_message)
 
 
@@ -254,8 +249,8 @@ def get_message(message):
             bot.register_next_step_handler(message, main_user_pay_or_not)
 
 
-@bot.message_handler(func=lambda message: (message.text == 'Пополнить список стоп-слов') or
-                                          (message.text == 'Написать и закрепить пост') or (
+@bot.message_handler(func=lambda message:(message.text == 'Пополнить список стоп-слов') or
+                                         (message.text == 'Написать и закрепить пост') or (
     message.text == 'Просмотреть список стоп слов') or (message.text == 'Удалить список стоп слов'))
 def main_admin(message):
     logging.info('main_admin')
@@ -274,11 +269,11 @@ def main_admin(message):
                               'Например: <code>Разместить объявление в группу вы можете через бота | Объявление |'
                               ' -1002130733166</code>',
                          parse_mode='html')
-        bot.register_next_step_handler(message, create_post)
+        bot.register_next_step_handler(message,create_post)
 
     if message.text == 'Просмотреть список стоп слов':
         words = requests_admin.get_all_stop_words()
-        bot.send_message(chat_id=message.chat.id, text=words)
+        bot.send_message(chat_id=message.chat.id,text=words)
 
     if message.text == 'Удалить список стоп слов':
         result = requests_admin.delete_all_stop_words()
@@ -324,19 +319,18 @@ def create_post(message):
                                          url=f'{peer_id}')
         markup.add(btn)
         try:
-            sent_message = bot.send_message(chat_id=chat_id,text=message_to_send, reply_markup=markup)
+            sent_message = bot.send_message(chat_id=chat_id,text=message_to_send,reply_markup=markup)
             bot.pin_chat_message(chat_id=chat_id,
                                  message_id=sent_message.message_id)
             bot.register_next_step_handler(message, main_admin)
             waiting_message_admin = False
 
         except Exception as e:
-            bot.send_message(message.chat.id,
-                             'Неправильно указан peer_id чата либо бот не является администратором'
-                             ' чата,попробуйте вести сообщение еще раз')
+            bot.send_message(message.chat.id, 'Неправильно указан peer_id чата либо бот не является администратором чата,попробуйте вести сообщение еще раз')
             bot.register_next_step_handler(message, create_post)
     except Exception as e:
-        bot.send_message(message.chat.id, 'Данные Введеные неверно,повторно нажмите на кнопку и повторите попытку')
+        bot.send_message(message.chat.id,'Данные Введеные неверно,повторно нажмите на кнопку и повторите попытку')
+
 
 
 def one_word(message):

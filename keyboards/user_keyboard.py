@@ -25,7 +25,7 @@ def create_subscribe_verification_markup():
 def main_menu_buttons():
     markup = types.InlineKeyboardMarkup()
     btn1 = types.InlineKeyboardButton(text='Чат с поддержкой', url='https://t.me/AntonPon0marev')
-    btn2 = types.InlineKeyboardButton(text='Написать сообщение', callback_data='Написать сообщение')
+    btn2 = types.InlineKeyboardButton(text='Написать сообщение', callback_data='write_message')
     markup.add(btn2)
     markup.add(btn1)
     return markup
