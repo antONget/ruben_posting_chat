@@ -8,10 +8,10 @@ class TgBot:
     admin_ids: int
     support_id: int
     chat_id: str
-    tarif_15: float
+    tarif_1: float
+    tarif_5: float
+    tarif_10: float
     tarif_50: float
-    tarif_100: float
-    tarif_200: float
     yoomoney_access_token: str
     yoomoney_receiver: str
 
@@ -28,10 +28,10 @@ def load_config(path: str = None) -> Config:
                                admin_ids=env('ADMIN_IDS'),
                                support_id=env('SUPPORT_ID'),
                                chat_id=env('CHAT_ID'),
-                               tarif_15=env('TARIF_15'),
+                               tarif_1=env('TARIF_1'),
+                               tarif_5=env('TARIF_5'),
+                               tarif_10=env('TARIF_10'),
                                tarif_50=env('TARIF_50'),
-                               tarif_100=env('TARIF_100'),
-                               tarif_200=env('TARIF_200'),
                                yoomoney_access_token=env('YOOMONEY_ACCESS_TOKEN'),
                                yoomoney_receiver=env('YOOMONEY_RECEIVER'),
                                ))

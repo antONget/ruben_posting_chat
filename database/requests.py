@@ -82,7 +82,7 @@ def delete_one_word(message):
 
 
 # ПРОВЕРКА ОПЛАТЫ И ЗАПИСЬ В БД КОЛ-ВА СЛОВ (ПО ПОДПИСКЕ)
-def proverka(message, token, amount_15, amount_50, amount_100, amount_200):
+def proverka(message, token, amount_1, amount_5, amount_10, amount_50):
     logging.info('proverka')
     PAYMENT_TOKEN = token
 
@@ -93,16 +93,38 @@ def proverka(message, token, amount_15, amount_50, amount_100, amount_200):
 
     for operation in history.operations:
 
-        if operation.status == 'success' and ((amount_15-(amount_15*0.05)) < operation.amount < amount_15):
+        if operation.status == 'success' and ((amount_1-(amount_1*0.05)) < operation.amount < amount_1):
             conn = sqlite3.connect('database/USERS.sql')
             cur = conn.cursor()
             cur.execute(f'UPDATE user_{user_id} SET id = "{user_id}"')
-            cur.execute(f'UPDATE user_{user_id} SET message_cnt = "{15}"')
+            cur.execute(f'UPDATE user_{user_id} SET message_cnt = "{1}"')
             conn.commit()
             cur.close()
             conn.close()
 
-            return 15
+            return 1
+
+        if operation.status == 'success' and ((amount_5-(amount_5*0.05)) < operation.amount < amount_5):
+            conn = sqlite3.connect('database/USERS.sql')
+            cur = conn.cursor()
+            cur.execute(f'UPDATE user_{user_id} SET id = "{user_id}"')
+            cur.execute(f'UPDATE user_{user_id} SET message_cnt = "{5}"')
+            conn.commit()
+            cur.close()
+            conn.close()
+
+            return 5
+
+        if operation.status == 'success' and ((amount_10-(amount_10*0.05)) < operation.amount < amount_10):
+            conn = sqlite3.connect('database/USERS.sql')
+            cur = conn.cursor()
+            cur.execute(f'UPDATE user_{user_id} SET id = "{user_id}"')
+            cur.execute(f'UPDATE user_{user_id} SET message_cnt = "{10}"')
+            conn.commit()
+            cur.close()
+            conn.close()
+
+            return 10
 
         if operation.status == 'success' and ((amount_50-(amount_50*0.05)) < operation.amount < amount_50):
             conn = sqlite3.connect('database/USERS.sql')
@@ -114,28 +136,6 @@ def proverka(message, token, amount_15, amount_50, amount_100, amount_200):
             conn.close()
 
             return 50
-
-        if operation.status == 'success' and ((amount_100-(amount_100*0.05)) < operation.amount < amount_100):
-            conn = sqlite3.connect('database/USERS.sql')
-            cur = conn.cursor()
-            cur.execute(f'UPDATE user_{user_id} SET id = "{user_id}"')
-            cur.execute(f'UPDATE user_{user_id} SET message_cnt = "{100}"')
-            conn.commit()
-            cur.close()
-            conn.close()
-
-            return 100
-
-        if operation.status == 'success' and ((amount_200-(amount_200*0.05)) < operation.amount < amount_200):
-            conn = sqlite3.connect('database/USERS.sql')
-            cur = conn.cursor()
-            cur.execute(f'UPDATE user_{user_id} SET id = "{user_id}"')
-            cur.execute(f'UPDATE user_{user_id} SET message_cnt = "{15}"')
-            conn.commit()
-            cur.close()
-            conn.close()
-
-            return 200
 
     else:
         return False

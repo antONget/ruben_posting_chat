@@ -82,6 +82,13 @@ def start(message):
                                   '📣\n\nЕсли у вас есть вопросы или нужно больше информации, просто напишите нам. Мы всегда готовы помочь! 🤗\n\nУдачи с вашими объявлениями! 🚀',
                              reply_markup=markup_4)
 
+@bot.callback_query_handler(func=lambda callback:(callback.data == 'Поддержка'))
+def support(callback):
+    bot.edit_message_text(chat_id=callback.message.chat.id,message_id=callback.message.chat.id,
+                          text='Если у вас есть вопросы связанные с работой бота, либо проблемы с проведением платежа, то можете обратиться к нам,'
+                               'также будем рады услышать предложения по улучшению функционала бота.'
+                               '\n@Mnenie_Ru'
+                               '\n@Alextreide84',reply_markup=types.InlineKeyboardMarkup())
 
 @bot.message_handler(func=lambda message: (message.text == 'Опубликовать объявление'))
 def main_user_pay_or_not(message):
@@ -93,18 +100,44 @@ def main_user_pay_or_not(message):
         if (data[0][1] is None) or (data[0][1] == 0):
             markup = types.InlineKeyboardMarkup()
 
-            quickpay_15 = Quickpay(
+            quickpay_1 = Quickpay(
                 receiver=config.tg_bot.yoomoney_receiver,
                 quickpay_form='shop',
                 targets='Оплата подписки',
                 paymentType='SB',
-                sum=config.tg_bot.tarif_15,
+                sum=config.tg_bot.tarif_1,
                 label=f'{user_id}'
             )
 
-            btn1 = types.InlineKeyboardButton(text=f'15 сообщений ({config.tg_bot.tarif_15} рубля)',
-                                              url=quickpay_15.base_url)
+            btn1 = types.InlineKeyboardButton(text=f'1 сообщение ({config.tg_bot.tarif_1} рублей)',
+                                              url=quickpay_1.base_url)
             markup.add(btn1)
+
+            quickpay_5 = Quickpay(
+                receiver=config.tg_bot.yoomoney_receiver,
+                quickpay_form='shop',
+                targets='Оплата подписки',
+                paymentType='SB',
+                sum=config.tg_bot.tarif_5,
+                label=f'{user_id}'
+            )
+
+            btn2 = types.InlineKeyboardButton(text=f'5 сообщений ({config.tg_bot.tarif_5} рубля)',
+                                              url=quickpay_5.base_url)
+            markup.add(btn2)
+
+            quickpay_10 = Quickpay(
+                receiver=config.tg_bot.yoomoney_receiver,
+                quickpay_form='shop',
+                targets='Оплата подписки',
+                paymentType='SB',
+                sum=config.tg_bot.tarif_10,
+                label=f'{user_id}'
+            )
+
+            btn3 = types.InlineKeyboardButton(text=f'10 сообщений ({config.tg_bot.tarif_10} рубля)',
+                                              url=quickpay_10.base_url)
+            markup.add(btn3)
 
             quickpay_50 = Quickpay(
                 receiver=config.tg_bot.yoomoney_receiver,
@@ -115,34 +148,8 @@ def main_user_pay_or_not(message):
                 label=f'{user_id}'
             )
 
-            btn2 = types.InlineKeyboardButton(text=f'50 сообщений ({config.tg_bot.tarif_50} рубля)',
+            btn4 = types.InlineKeyboardButton(text=f'50 сообщений ({config.tg_bot.tarif_50} рублей)',
                                               url=quickpay_50.base_url)
-            markup.add(btn2)
-
-            quickpay_100 = Quickpay(
-                receiver=config.tg_bot.yoomoney_receiver,
-                quickpay_form='shop',
-                targets='Оплата подписки',
-                paymentType='SB',
-                sum=config.tg_bot.tarif_50,
-                label=f'{user_id}'
-            )
-
-            btn3 = types.InlineKeyboardButton(text=f'100 сообщений ({config.tg_bot.tarif_100} рубля)',
-                                              url=quickpay_100.base_url)
-            markup.add(btn3)
-
-            quickpay_200 = Quickpay(
-                receiver=config.tg_bot.yoomoney_receiver,
-                quickpay_form='shop',
-                targets='Оплата подписки',
-                paymentType='SB',
-                sum=config.tg_bot.tarif_100,
-                label=f'{user_id}'
-            )
-
-            btn4 = types.InlineKeyboardButton(text=f'200 сообщений ({config.tg_bot.tarif_200} рублей)',
-                                              url=quickpay_200.base_url)
             markup.add(btn4)
             bot.send_message(chat_id=message.chat.id,
                              text='Чтобы отправлять сообщения в группу вам нужно оплатить подписку',
@@ -170,11 +177,11 @@ def proverka(message):
     bot.send_message(message.chat.id, 'Ожидайте,проверяем оплату')
 
     token = config.tg_bot.yoomoney_access_token
-    amount_15 = float(config.tg_bot.tarif_15)
+    amount_1 = float(config.tg_bot.tarif_1)
+    amount_5 = float(config.tg_bot.tarif_5)
+    amount_10 = float(config.tg_bot.tarif_10)
     amount_50 = float(config.tg_bot.tarif_50)
-    amount_100 = float(config.tg_bot.tarif_100)
-    amount_200 = float(config.tg_bot.tarif_200)
-    cnt = requests.proverka(message, token, amount_15, amount_50, amount_100, amount_200)
+    cnt = requests.proverka(message, token, amount_1, amount_5, amount_10, amount_50)
     if cnt:
         bot.send_message(chat_id=message.chat.id,
                          text=f'Благодарим за оформление подписки,теперь вам доступно {cnt} сообщений\n'
@@ -245,7 +252,7 @@ def get_message(message):
 
             ids = str(config.tg_bot.chat_id).split(',')
             for chat_id in ids:
-                bot.send_message(chat_id=chat_id, text=message_to_send)
+                bot.send_message(chat_id=int(chat_id), text=message_to_send)
             bot.register_next_step_handler(message, main_user_pay_or_not)
 
 
