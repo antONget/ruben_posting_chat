@@ -19,8 +19,8 @@ bot = telebot.TeleBot(config.tg_bot.token)
 logger = logging.getLogger(__name__)
 logging.basicConfig(
         level=logging.INFO,
-        # filename="py_log.log",
-        # filemode='w',
+        filename="py_log.log",
+        filemode='w',
         format='%(filename)s:%(lineno)d #%(levelname)-8s '
                '[%(asctime)s] - %(name)s - %(message)s')
 logger.info('Starting bot')
@@ -39,6 +39,15 @@ except Exception as err:
 def extract_arg(arg):
     return arg.split()[1:]
 
+
+@bot.message_handler(commands=['get_logfile'])
+def get_log_file(message):
+    logging.info('get_log_file')
+    file_name = 'py_log.log'
+
+    with open(file_name,'rb') as file:
+
+        bot.send_document(chat_id=message.chat.id,document=file)
 
 @bot.message_handler(commands=['start'])
 def start(message):
