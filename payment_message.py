@@ -53,7 +53,7 @@ def start(message):
     conn = sqlite3.connect('database/USERS.sql')
     cur = conn.cursor()
     cur.execute(f'UPDATE user_{user_id} SET id = "{user_id}"')
-    cur.execute(f'UPDATE user_{user_id} SET message_cnt = "{50}"')
+    # cur.execute(f'UPDATE user_{user_id} SET message_cnt = "{50}"')
     conn.commit()
     cur.close()
     conn.close()
