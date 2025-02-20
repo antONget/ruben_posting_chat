@@ -429,11 +429,11 @@ def pre_post(message):
     else:
         media_files.append(types.InputMediaVideo(data[0].split(':')[1],caption=message_to_send))
 
-    print(data)
+    # print(data)
     for elem_id in data[1:]:
         if elem_id.split(':')[0] == 'photo':
             media_files.append(types.InputMediaPhoto(elem_id.split(':')[1]))
-            print(1)
+            # print(1)
 
         if elem_id.split(':')[0] == 'video':
             media_files.append(types.InputMediaVideo(elem_id.split(':')[1]))
