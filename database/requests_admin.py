@@ -70,3 +70,18 @@ def delete_all_stop_words():
     cur.close()
     conn.close()
     return True
+
+
+def add_name_and_id_group(name,id,href):
+    conn = sqlite3.connect('database/GROUP_NAME.sql')
+    cur = conn.cursor()
+    cur.execute(f'SELECT * FROM group_name WHERE id = "{id}"')
+    data = cur.fetchone()
+    if data:
+        cur.close()
+        conn.close()
+    else:
+        cur.execute(f'INSERT INTO group_name (name,id,href) VALUES (?,?,?)',(name,id,href))
+        conn.commit()
+        cur.close()
+        conn.close()

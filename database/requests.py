@@ -17,11 +17,17 @@ def create_table(message):
 
     conn = sqlite3.connect('database/USERS.sql')
     cur = conn.cursor()
-    cur.execute(f'CREATE TABLE IF NOT EXISTS user_{user_id} (id int,message_cnt int,chats_id text)')
+    cur.execute(f'CREATE TABLE IF NOT EXISTS user_{user_id} (id int,message_cnt int,chats_id text,message_to_send text,media_files text)')
     conn.commit()
     cur.close()
     conn.close()
 
+    conn = sqlite3.connect('database/GROUP_NAME.sql')
+    cur = conn.cursor()
+    cur.execute(f'CREATE TABLE IF NOT EXISTS group_name (name text , id int,href text)')
+    conn.commit()
+    cur.close()
+    conn.close()
 
 def add_chat_id_user(user_id, chat_id):
     conn = sqlite3.connect('database/USERS.sql')
@@ -181,17 +187,18 @@ def send_message_to_chat(message_to_send, user_id):
             return False
 
     else:
-        conn = sqlite3.connect('database/USERS.sql')
-        cur = conn.cursor()
-        cur.execute(f'SELECT message_cnt FROM user_{user_id}')
-        data = cur.fetchall()
-        cnt = data[0][0] - 1
-        cur.execute(f'UPDATE user_{user_id} SET message_cnt = "{cnt}"')
-        conn.commit()
-        cur.close()
-        conn.close()
-
         return True
+
+def del_one_message(user_id):
+    conn = sqlite3.connect('database/USERS.sql')
+    cur = conn.cursor()
+    cur.execute(f'SELECT message_cnt FROM user_{user_id}')
+    data = cur.fetchall()
+    cnt = data[0][0] - 1
+    cur.execute(f'UPDATE user_{user_id} SET message_cnt = "{cnt}"')
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
 def get_chat_id(user_id):
@@ -202,3 +209,58 @@ def get_chat_id(user_id):
     cur.close()
     conn.close()
     return id_[0][0]
+
+
+def save_message_to_send(message_to_send,user_id):
+    conn = sqlite3.connect('database/USERS.sql')
+    cur = conn.cursor()
+    cur.execute(f'UPDATE user_{user_id} SET message_to_send = "{message_to_send}"')
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def get_message_to_send(user_id):
+    conn = sqlite3.connect('database/USERS.sql')
+    cur = conn.cursor()
+    cur.execute(f'SELECT message_to_send FROM user_{user_id}')
+    message = cur.fetchall()
+    cur.close()
+    conn.close()
+    return message
+
+def get_media(user_id):
+    conn = sqlite3.connect('database/USERS.sql')
+    cur = conn.cursor()
+    cur.execute(f'SELECT media_files FROM user_{user_id}')
+    data = cur.fetchall()
+    rezult = data[0][0]
+    cur.close()
+    conn.close()
+    return rezult
+
+def update_media_files(user_id,new_media):
+    conn = sqlite3.connect('database/USERS.sql')
+    cur = conn.cursor()
+    cur.execute(f'UPDATE user_{user_id} SET media_files = "{new_media}"')
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def clean_media_files(user_id):
+    conn = sqlite3.connect('database/USERS.sql')
+    cur = conn.cursor()
+    cur.execute(f'UPDATE user_{user_id} SET media_files = "None"')
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def get_group_name_by_id(id):
+    conn = sqlite3.connect('database/GROUP_NAME.sql')
+    cur = conn.cursor()
+    cur.execute(f'SELECT * FROM group_name WHERE id = "{id}"')
+    data = cur.fetchall()
+    cur.close()
+    conn.close()
+    return data
+
+

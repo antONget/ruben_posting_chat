@@ -2,6 +2,7 @@ import time
 import telebot
 from telebot import types
 from yoomoney import Quickpay
+import sqlite3
 
 from keyboards import admin_keyboard, user_keyboard
 from database import requests, requests_admin
@@ -19,8 +20,8 @@ bot = telebot.TeleBot(config.tg_bot.token)
 logger = logging.getLogger(__name__)
 logging.basicConfig(
         level=logging.INFO,
-        filename="py_log.log",
-        filemode='w',
+        # filename="py_log.log",
+        # filemode='w',
         format='%(filename)s:%(lineno)d #%(levelname)-8s '
                '[%(asctime)s] - %(name)s - %(message)s')
 logger.info('Starting bot')
@@ -40,24 +41,25 @@ def extract_arg(arg):
     return arg.split()[1:]
 
 
-@bot.message_handler(commands=['get_logfile'])
-def get_log_file(message):
-    logging.info('get_log_file')
-    file_name = 'py_log.log'
-
-    with open(file_name,'rb') as file:
-
-        bot.send_document(chat_id=message.chat.id,document=file)
-
 @bot.message_handler(commands=['start'])
 def start(message):
     logging.info('start')
     comand = extract_arg(message.text)
 
-
     logging.info('start')
     user_id = message.from_user.id
     requests.create_table(message)
+
+    conn = sqlite3.connect('database/USERS.sql')
+    cur = conn.cursor()
+    cur.execute(f'UPDATE user_{user_id} SET id = "{user_id}"')
+    cur.execute(f'UPDATE user_{user_id} SET message_cnt = "{50}"')
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+
     if str(user_id) in admin_ids_list:
         markup = admin_keyboard.create_reply_markup_admin()
         bot.send_message(chat_id=message.chat.id,
@@ -91,20 +93,18 @@ def start(message):
                                   '📣\n\nЕсли у вас есть вопросы или нужно больше информации, просто напишите нам. Мы всегда готовы помочь! 🤗\n\nУдачи с вашими объявлениями! 🚀',
                              reply_markup=markup_4)
 
-
-@bot.callback_query_handler(func=lambda callback:(callback.data == 'support'))
+@bot.callback_query_handler(func=lambda callback:(callback.data == 'Поддержка'))
 def support(callback):
-    bot.edit_message_text(chat_id=callback.message.chat.id,
-                          message_id=callback.message.message_id,
+    bot.edit_message_text(chat_id=callback.message.chat.id,message_id=callback.message.message_id,
                           text='Если у вас есть вопросы связанные с работой бота, либо проблемы с проведением платежа, то можете обратиться к нам,'
                                'также будем рады услышать предложения по улучшению функционала бота.'
                                '\n@Mnenie_Ru'
-                               '\n@Alextreide84',reply_markup=types.InlineKeyboardMarkup())
+                               '\n@Alextreide84',reply_markup=None)
 
-@bot.message_handler(func=lambda message: (message.text == 'Опубликовать объявление'))
+@bot.message_handler(func=lambda message: (message.text == 'Начать публикацию'))
 def main_user_pay_or_not(message):
     logging.info('main_user_pay_or_not')
-    if message.text == 'Опубликовать объявление':
+    if message.text == 'Начать публикацию':
         user_id = message.from_user.id
 
         data = requests.check_data_cnt_message(message)
@@ -167,7 +167,7 @@ def main_user_pay_or_not(message):
                              reply_markup=markup)
             time.sleep(3)
 
-            markup_2 = user_keyboard.create_post_message_user()
+            markup_2 = user_keyboard.check_pay_button()
 
             bot.send_message(chat_id=message.chat.id,
                              text='После оплаты нажмите на кнопку "Проверить оплату"',
@@ -177,8 +177,10 @@ def main_user_pay_or_not(message):
         else:
             markup = user_keyboard.main_menu_buttons()
             bot.send_message(chat_id=message.chat.id,
-                             text=f'У вас осталось {data[0][1]} сообщений для отправки',
-                             reply_markup=markup)
+                             text=f'У вас осталось {data[0][1]} сообщений для отправки\n'
+                                  f'Для публикации нажмите <b>"Написать сообщение"</b>\n'
+                                  f'Если у вас есть вопросы, задайте их в поддержку по кнопке <b>"Чат с поддержкой"</b>',
+                             reply_markup=markup,parse_mode='HTML')
 
 
 @bot.message_handler(func=lambda message: message.text == 'Проверить оплату')
@@ -196,7 +198,7 @@ def proverka(message):
     if cnt:
         bot.send_message(chat_id=message.chat.id,
                          text=f'Благодарим за оформление подписки,теперь вам доступно {cnt} сообщений\n'
-                              f'Чтобы продолжить нажмите на кнопку "Опубликовать объявление"', reply_markup=markup_3)
+                              f'Чтобы продолжить нажмите на кнопку "Начать публикацию"', reply_markup=markup_3)
     else:
         markup = user_keyboard.support_button()
         bot.send_message(chat_id=message.chat.id,
@@ -230,46 +232,222 @@ def get_message(message):
     logging.info('get_message')
     user_id = message.from_user.id
     message_to_send = str(message.text)
-    chat_id = requests.get_chat_id(user_id)
+    if message_to_send == 'Начать публикацию':
+        main_user_pay_or_not(message)
 
-    if not requests.send_message_to_chat(message_to_send, user_id):
-        markup = user_keyboard.support_button()
-        bot.send_message(chat_id=message.chat.id,
-                         text='Ваше сообщение не прошло модерацию,в нем были найдены стоп слова.\n'
-                              'Если в вашем сообщении не было ничего запрещенного обратитесь'
-                              ' в поддержку нажав на кнопку ниже',
-                         reply_markup=markup)
-
-        markup = user_keyboard.create_subscribe_verification_markup()
-        bot.send_message(chat_id=message.chat.id,
-                         text='Чтобы отправить сообщение еще раз нажмите на кнопку "Опубликовать объявление"',
-                         reply_markup=markup)
-        bot.register_next_step_handler(message, main_user_pay_or_not)
     else:
-        if str(chat_id) != 'None':
+
+        if not requests.send_message_to_chat(message_to_send, user_id):
+            markup = user_keyboard.support_button()
+            bot.send_message(chat_id=message.chat.id,
+                             text='Ваше сообщение не прошло модерацию,в нем были найдены стоп слова.\n'
+                                  'Если в вашем сообщении не было ничего запрещенного обратитесь'
+                                  ' в поддержку нажав на кнопку ниже',
+                             reply_markup=markup)
+
             markup = user_keyboard.create_subscribe_verification_markup()
             bot.send_message(chat_id=message.chat.id,
-                             text='Ваше сообщение прошло модерацию и скоро будет опубликовано',
+                             text='Чтобы отправить сообщение еще раз нажмите на кнопку "Начать публикацию"',
                              reply_markup=markup)
-            bot.send_message(chat_id=chat_id,
-                             text=message_to_send)
             bot.register_next_step_handler(message, main_user_pay_or_not)
+        else:
+            media_data = requests.get_media(user_id)
+            if str(media_data) == 'None':
+                markup = user_keyboard.add_photo_or_video_buttons(user_id)
+                bot.send_message(chat_id=message.chat.id,
+                                     text=f'Ваше сообщение прошло модерацию\n\nВы можете добавить фото или видео а также отретактировать ваше сообщение \n\nваше текущее обьявление выглядит так: {message_to_send}\n\n'
+                                          f'Если все заполнено корректно, а фотографий быть не должно то нажмите на кнопку "Опубликовать обьявление"',
+                                     reply_markup=markup)
+                requests.save_message_to_send(message_to_send,user_id)
+            else:
+                requests.save_message_to_send(message_to_send, user_id)
+                pre_post(message)
+
+@bot.callback_query_handler(func=lambda callback:('Добавить фото' in callback.data) or ('Добавить видео' in callback.data) or ('Опубликовать обьявление' in callback.data) or ('Редактировать текст' in callback.data))
+def redact_or_send_post(callback):
+    user_id = callback.from_user.id
+
+    if callback.data == f'Добавить фото {user_id}':
+        bot.edit_message_text(chat_id=callback.message.chat.id,message_id=callback.message.message_id,text='Отправьте одно фото дня добавления к посту\n\nПосле отправки нажмите на кнопку "Предварительный просмотр"',reply_markup=None)
+
+    if callback.data == f'Добавить видео {user_id}':
+        bot.edit_message_text(chat_id=callback.message.chat.id,message_id=callback.message.message_id,text='Отправьте одно видео для добавления его к посту\n\nПосле отправки нажмите на кнопку "Предварительный просмотр"',reply_markup=None)
+
+    if callback.data == f'Опубликовать обьявление {user_id}':
+        chat_id = requests.get_chat_id(user_id)
+
+        if str(chat_id) != 'None':
+            link_name_data = requests.get_group_name_by_id(chat_id)
+
+            name = link_name_data[0][0]
+            link = str(link_name_data[0][2])
+
+            while ' ' in link:
+                link = link.replace(' ','')
+
+            message_to_send = str(requests.get_message_to_send(user_id)[0][0]) + f'\n📣 <code>Объявление размещено пользователем в группе:</code> <a href="{link}">{name}\nПодпишись!!!</a> ✔️'
 
         else:
-            markup = user_keyboard.create_subscribe_verification_markup()
-            bot.send_message(chat_id=message.chat.id,
-                             text='Ваше сообщение прошло модерацию и скоро будет опубликовано',
-                             reply_markup=markup)
+            message_to_send = str(requests.get_message_to_send(user_id)[0][0]) + (f'\n'
+                                                                                  f'📣 <code>Объявление размещено пользователем в группах:</code> <a href="https://t.me/raznorabochie_Vsevologsk">Разнорабочие Всеволожск🛠️</a>\n'
+                                                                                    f' <a href="https://t.me/sam_o_stroy">Самострой 🏡</a>!!! ✔️')
 
-            ids = str(config.tg_bot.chat_id).split(',')
-            for chat_id in ids:
-                bot.send_message(chat_id=int(chat_id), text=message_to_send)
-            bot.register_next_step_handler(message, main_user_pay_or_not)
+        data = requests.get_media(user_id).split('|')
+
+        media_files = []
+
+        try:
+            if data[0].split(':')[0] == 'photo':
+                media_files.append(types.InputMediaPhoto(data[0].split(':')[1], caption=message_to_send,parse_mode='HTML'))
+
+            else:
+                media_files.append(types.InputMediaVideo(data[0].split(':')[1], caption=message_to_send,parse_mode='HTML'))
+
+            for elem_id in data[1:]:
+                if elem_id.split(':')[0] == 'photo':
+                    media_files.append(types.InputMediaPhoto(elem_id.split(':')[1]))
+
+                if elem_id.split(':')[0] == 'video':
+                    media_files.append(types.InputMediaVideo(elem_id.split(':')[1]))
+
+        except IndexError as e:
+            media_files = []
+
+
+        if str(chat_id) != 'None':
+            if media_files != []:
+                bot.send_media_group(chat_id,media_files)
+
+                requests.del_one_message(user_id)
+                requests.clean_media_files(user_id)
+
+                bot.send_message(callback.message.chat.id,'Ваше обьявление скоро будет опубликовано',reply_markup=user_keyboard.create_subscribe_verification_markup())
+
+                bot.register_next_step_handler(callback.message, main_user_pay_or_not)
+
+            else:
+                bot.send_message(chat_id=chat_id,text=message_to_send,parse_mode='HTML')
+
+                requests.del_one_message(user_id)
+                requests.clean_media_files(user_id)
+
+                bot.send_message(callback.message.chat.id, 'Ваше обьявление скоро будет опубликовано',
+                                 reply_markup=user_keyboard.create_subscribe_verification_markup())
+
+                bot.register_next_step_handler(callback.message, main_user_pay_or_not)
+
+
+        else:
+            if media_files != []:
+                ids = str(config.tg_bot.chat_id).split(',')
+                for chat_id in ids:
+                    if chat_id == '':
+                        continue
+                    else:
+                        bot.send_media_group(int(chat_id),media_files)
+
+                requests.del_one_message(user_id)
+                requests.clean_media_files(user_id)
+
+                bot.send_message(callback.message.chat.id, 'Ваше обьявление скоро будет опубликовано',
+                                 reply_markup=user_keyboard.create_subscribe_verification_markup())
+
+                bot.register_next_step_handler(callback.message, main_user_pay_or_not)
+
+            else:
+                ids = str(config.tg_bot.chat_id).split(',')
+                for chat_id in ids:
+                    if chat_id == '':
+                        continue
+                    else:
+                        bot.send_message(chat_id=chat_id,text=message_to_send,parse_mode='HTML')
+
+                requests.del_one_message(user_id)
+                requests.clean_media_files(user_id)
+
+                bot.send_message(callback.message.chat.id, 'Ваше обьявление скоро будет опубликовано',
+                                 reply_markup=user_keyboard.create_subscribe_verification_markup())
+
+                bot.register_next_step_handler(callback.message, main_user_pay_or_not)
+
+
+
+    if callback.data == f'Редактировать текст {user_id}':
+        bot.edit_message_text(chat_id=callback.message.chat.id,message_id=callback.message.message_id,text='Отправьте новый текст',reply_markup=None)
+        bot.register_next_step_handler(callback.message,get_message)
+
+@bot.message_handler(content_types=['photo'])
+def get_photo_to_post(message):
+    user_id = message.from_user.id
+    photo_ids = []
+
+    for index ,photo in enumerate(message.photo):
+        if index%4 == 0:
+            id = photo.file_id
+            photo_ids.append(id)
+
+    media_data = requests.get_media(user_id)
+
+    photo_id = photo_ids[0]
+    new_media = ''
+    if str(media_data) == 'None':
+        new_media = f'photo:{photo_id}' + '|'
+    else:
+        new_media = media_data + f'photo:{photo_id}' + '|'
+    requests.update_media_files(user_id,new_media)
+    bot.send_message(message.chat.id, 'Фото добавлено,можете добавить еще',reply_markup=user_keyboard.pre_send_post_button())
+
+
+@bot.message_handler(content_types=['video'])
+def get_video_to_post(message):
+    user_id = message.from_user.id
+
+    video_ids = []
+
+    video_ids.append(message.video.file_id)
+
+    media_data = requests.get_media(user_id)
+    for video_id in video_ids:
+        media_data += f'video:{video_id}' + '|'
+
+    requests.update_media_files(user_id, media_data)
+    bot.send_message(message.chat.id, 'Видео добавлено, можете добавить еще',reply_markup=user_keyboard.pre_send_post_button())
+
+
+@bot.message_handler(func=lambda message:(message.text == 'Предварительный просмотр'))
+def pre_post(message):
+    user_id = message.from_user.id
+
+    data = requests.get_media(user_id).split('|')
+
+    media_files = []
+    message_to_send = str(requests.get_message_to_send(user_id)[0][0])
+
+    if data[0].split(':')[0] == 'photo':
+        media_files.append(types.InputMediaPhoto(data[0].split(':')[1],caption=message_to_send))
+
+    else:
+        media_files.append(types.InputMediaVideo(data[0].split(':')[1],caption=message_to_send))
+
+    print(data)
+    for elem_id in data[1:]:
+        if elem_id.split(':')[0] == 'photo':
+            media_files.append(types.InputMediaPhoto(elem_id.split(':')[1]))
+            print(1)
+
+        if elem_id.split(':')[0] == 'video':
+            media_files.append(types.InputMediaVideo(elem_id.split(':')[1]))
+
+    bot.send_media_group(message.chat.id,media_files)
+    bot.send_message(message.chat.id,f'ваше текущее обьявление выглядит так\n\nВыберите действие',reply_markup=user_keyboard.add_photo_or_video_buttons(user_id))
+
+
 
 
 @bot.message_handler(func=lambda message:(message.text == 'Пополнить список стоп-слов') or
                                          (message.text == 'Написать и закрепить пост') or (
     message.text == 'Просмотреть список стоп слов') or (message.text == 'Удалить список стоп слов'))
+
 def main_admin(message):
     logging.info('main_admin')
     if message.text == 'Пополнить список стоп-слов':
@@ -282,10 +460,10 @@ def main_admin(message):
     if message.text == 'Написать и закрепить пост':
         bot.send_message(chat_id=message.chat.id,
                          text='Напишите и отправьте текст для поста,текст для кнопки'
-                              ' и peer_id чата разделяя их знаками "|" (peer_id группы вы можете получить с помощью'
+                              ' , peer_id чата, ссылку на группу и название группы разделяя их знаками "|" (peer_id группы вы можете получить с помощью'
                               ' бота @username_to_id_bot\n'
                               'Например: <code>Разместить объявление в группу вы можете через бота | Объявление |'
-                              ' -1002130733166</code>',
+                              ' -1002454315455 | https://t.me/example_link | Самострой</code>',
                          parse_mode='html')
         bot.register_next_step_handler(message,create_post)
 
@@ -330,7 +508,12 @@ def create_post(message):
         message_to_send = data[0]
         buttun_text = data[1]
         chat_id = int(data[2])
-        peer_id = f'https://t.me/Sampostroy_bot?start={data[2]}'
+        peer_id = f'https://t.me/{config.tg_bot.bot_link_name}?start={data[2]}'
+        href = str(data[3])
+        group_name = str(data[4])
+        requests_admin.add_name_and_id_group(group_name,
+                                             chat_id,
+                                             href)
 
         markup = types.InlineKeyboardMarkup()
         btn = types.InlineKeyboardButton(text=buttun_text,
@@ -344,10 +527,15 @@ def create_post(message):
             waiting_message_admin = False
 
         except Exception as e:
-            bot.send_message(message.chat.id, 'Неправильно указан peer_id чата либо бот не является администратором чата,попробуйте вести сообщение еще раз')
+            print(e)
+            bot.send_message(message.chat.id,
+                             'Неправильно указан peer_id чата либо бот не является администратором чата, '
+                             'попробуйте вести сообщение еще раз')
             bot.register_next_step_handler(message, create_post)
     except Exception as e:
-        bot.send_message(message.chat.id,'Данные Введеные неверно,повторно нажмите на кнопку и повторите попытку')
+        print(e)
+        bot.send_message(message.chat.id,
+                         'Данные введены неверно,повторно нажмите на кнопку и повторите попытку')
 
 
 

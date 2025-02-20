@@ -14,6 +14,7 @@ class TgBot:
     tarif_50: float
     yoomoney_access_token: str
     yoomoney_receiver: str
+    bot_link_name: str
 
 
 @dataclass
@@ -34,4 +35,5 @@ def load_config(path: str = None) -> Config:
                                tarif_50=env('TARIF_50'),
                                yoomoney_access_token=env('YOOMONEY_ACCESS_TOKEN'),
                                yoomoney_receiver=env('YOOMONEY_RECEIVER'),
+                               bot_link_name=env('BOT_LINK_NAME'),
                                ))
