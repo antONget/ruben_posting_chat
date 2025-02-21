@@ -563,4 +563,8 @@ def many_words(message):
     waiting_message_admin = False
 
 
-bot.polling(none_stop=True)
+while True:
+    try:
+        bot.polling(none_stop=True)
+    except Exception as e:
+        time.sleep(2)
