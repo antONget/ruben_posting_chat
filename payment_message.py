@@ -40,6 +40,21 @@ except Exception as err:
 def extract_arg(arg):
     return arg.split()[1:]
 
+@bot.message_handler(commands=['get_file'])
+def get_file(message):
+    file_name = 'py_log.log'
+
+    with open(file_name,'rb') as file:
+        bot.send_document(chat_id=message.chat.id,document=file)
+
+
+@bot.message_handler(commands=['get_data'])
+def get_data(message):
+    file_name = 'database/USERS.sql'
+
+    with open(file_name,'rb') as file:
+        bot.send_document(chat_id=message.chat.id,document=file)
+
 
 @bot.message_handler(commands=['start'])
 def start(message):
